@@ -208,6 +208,39 @@ def growth_rate():
         } for row in data])
     return jsonify([])
 
+# Function to calculate bounding box size and track growth
+def track_plant_growth(detections):
+    """Calculate bounding box size, track changes over time, and estimate growth rates."""
+    for detection in detections:
+        plant_name = detection["plant_name"]
+        x_min, y_min, x_max, y_max = detection["bbox"]
+
+        # Calculate bounding box width and height in pixels
+        width_px = x_max - x_min
+        height_px = y_max - y_min
+
+        # Convert pixel measurements to real-world dimensions (e.g., cm)
+        width_cm = width_px / PIXELS_PER_CM
+        height_cm = height_px / PIXELS_PER_CM
+
+        # Store the size for this plant
+        plant_sizes[plant_name].append({
+            "time": time.time(),  # Current timestamp
+            "width_cm": width_cm,
+            "height_cm": height_cm
+        })
+
+        # Calculate growth rate (if there are at least 2 data points)
+        if len(plant_sizes[plant_name]) >= 2:
+            prev_size = plant_sizes[plant_name][-2]
+            curr_size = plant_sizes[plant_name][-1]
+
+            time_diff = curr_size["time"] - prev_size["time"]
+            width_growth_rate = (curr_size["width_cm"] - prev_size["width_cm"]) / time_diff
+            height_growth_rate = (curr_size["height_cm"] - prev_size["height_cm"]) / time_diff
+
+            print(f"Plant: {plant_name}, Width Growth Rate: {width_growth_rate:.2f} cm/s, Height Growth Rate: {height_growth_rate:.2f} cm/s")
+
 @app.route("/seasonal_status")
 def seasonal_status():
     """Return seasonal status data and store it in MariaDB."""
