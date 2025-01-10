@@ -1,26 +1,50 @@
+// Configuration for API endpoints
+const endpoints = {
+    growthRate: "/growth_rate",
+    seasonalStatus: "/seasonal_status",
+    harvestScheduler: "/harvest_scheduler",
+    growthGraph: "/growth_graph",
+    sensorData: "/sensor_data",
+    inferenceData: "/inference_data"
+};
+
 // Function to update the time and date
 function updateDateTime() {
     const now = new Date();
-    const date = now.toLocaleDateString();
-    const time = now.toLocaleTimeString();
-    document.getElementById("datetime").textContent = `${date} ${time}`;
+    const datetimeElement = document.getElementById("datetime");
+    datetimeElement.textContent = now.toLocaleString();
 }
 
 // Update the time and date every second
 setInterval(updateDateTime, 1000);
 updateDateTime(); // Initial call
 
-// Function to fetch and display sensor data
+// Reusable function to fetch and display data in a table
+async function fetchData(url, tableId, rowTemplate) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        const tableBody = document.getElementById(tableId);
+        tableBody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = rowTemplate(row);
+            tableBody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error(`Error fetching data from ${url}:`, error);
+        const tableBody = document.getElementById(tableId);
+        tableBody.innerHTML = `<tr><td colspan="4">Failed to load data. Please try again later.</td></tr>`;
+    }
+}
+
+// Fetch and display sensor data
 async function fetchSensorData() {
     try {
-        const response = await fetch("/sensor_data");
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        const response = await fetch(endpoints.sensorData);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-
-        // Debugging: Log the received data
-        console.log("Sensor data received:", data);
 
         // Update system monitoring data
         document.getElementById("cpu-usage").textContent = `${data.cpu_usage.toFixed(2)}%`;
@@ -30,33 +54,77 @@ async function fetchSensorData() {
         // Update IP address
         document.getElementById("ip-address").textContent = `IP: ${data.ip_address}`;
 
-        // Update analog sensor data
+        // Update sensor data
         document.getElementById("analog-value").textContent = `${data.analog_value !== null ? data.analog_value : "N/A"}`;
-
-        // Update color sensor data
         document.getElementById("color-red").textContent = `${data.color_red !== null ? data.color_red : "N/A"}`;
-
-        // Update motion sensor data
         document.getElementById("accel-x").textContent = `${data.accel_x !== null ? data.accel_x.toFixed(2) : "N/A"}`;
-
-        // Update pressure and temperature data
         document.getElementById("pressure").textContent = `${data.pressure !== null ? data.pressure.toFixed(2) : "N/A"}`;
-
-        // Update SHTC3 temperature data
         document.getElementById("temperature-sht").textContent = `${data.temperature_sht !== null ? data.temperature_sht.toFixed(2) : "N/A"}`;
     } catch (error) {
         console.error("Error fetching sensor data:", error);
     }
 }
 
-// Update sensor data every 2 seconds
-setInterval(fetchSensorData, 2000);
-fetchSensorData(); // Initial call
+// Fetch and display growth rate data
+function fetchGrowthRateData() {
+    fetchData(endpoints.growthRate, 'growth-rate-table-body', row => `
+        <td>${row.plant_name}</td>
+        <td>${row.rate}</td>
+        <td>${row.height}</td>
+        <td>${row.time_after_planting}</td>
+    `);
+}
+
+function fetchGrowthGraph() {
+    fetch('/growth_graph')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Graph Data:", data); // Debugging: Log the received data
+            const graphImg = document.getElementById('growth-graph');
+            if (data.image) {
+                graphImg.src = `data:image/png;base64,${data.image}`;
+            } else {
+                graphImg.src = "https://via.placeholder.com/400x200?text=Graph+Not+Available";
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching growth graph:', error);
+            const graphImg = document.getElementById('growth-graph');
+            graphImg.src = "https://via.placeholder.com/400x200?text=Graph+Not+Available";
+        });
+}
+
+// Periodically fetch and update the graph
+setInterval(fetchGrowthGraph, 5000);
+fetchGrowthGraph(); // Initial call
+
+
+// Fetch and display seasonal status
+function fetchSeasonalStatus() {
+    fetchData(endpoints.seasonalStatus, 'seasonal-status-table-body', row => `
+        <td>${row.plant_name}</td>
+        <td>${row.start_date}</td>
+        <td>${row.harvest_date}</td>
+        <td>${row.current_stage}%</td>
+    `);
+}
+
+// Fetch and display harvest scheduler
+function fetchHarvestScheduler() {
+    fetchData(endpoints.harvestScheduler, 'harvest-scheduler-table-body', row => `
+        <td>${row.plant_name}</td>
+        <td>${row.predicted_harvest_date}</td>
+    `);
+}
 
 // Function to fetch an image of the detected species
 async function fetchSpeciesImage(speciesName) {
     try {
-        // Use a public API like Wikimedia Commons to fetch an image
         const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(speciesName)}&prop=pageimages&format=json&pithumbsize=100&origin=*`);
         const data = await response.json();
         const pages = data.query.pages;
@@ -70,14 +138,11 @@ async function fetchSpeciesImage(speciesName) {
     }
 }
 
-// static/js/scripts.js
-// static/js/scripts.js
+// Fetch and display detection insights
 async function updateDetectionData() {
     try {
-        const response = await fetch("/inference_data");
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        const response = await fetch(endpoints.inferenceData);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
 
         // Find the detection with the highest confidence score
@@ -130,124 +195,33 @@ async function updateDetectionData() {
     }
 }
 
-// Update detection data every 2 seconds
-setInterval(updateDetectionData, 2000);
-updateDetectionData(); // Initial call
-
-// Function to fetch and display growth rate data
-async function fetchGrowthData() {
-    try {
-        const response = await fetch("/growth_graph");
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-
-        // Update the growth graph
-        document.getElementById("growth-graph").src = `data:image/png;base64,${data.image}`;
-
-        // Update the growth rate table
-        const growthRateTableBody = document.getElementById("growth-rate-table-body");
-        growthRateTableBody.innerHTML = `
-            <tr>
-                <td>Plant A</td>
-                <td>10 cm</td>
-                <td>30 cm</td>
-            </tr>
-            <tr>
-                <td>Plant B</td>
-                <td>5 cm</td>
-                <td>25 cm</td>
-            </tr>
-            <tr>
-                <td>Plant C</td>
-                <td>8 cm</td>
-                <td>24 cm</td>
-            </tr>
-        `;
-    } catch (error) {
-        console.error("Error fetching growth data:", error);
-    }
-}
-
-// Update growth data every 5 seconds
-setInterval(fetchGrowthData, 5000);
-fetchGrowthData(); // Initial call
-
-// Function to fetch and display seasonal status
-async function fetchSeasonalStatus() {
-    try {
-        const response = await fetch("/seasonal_status");
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-
-        // Update the seasonal status table
-        const seasonalStatusTableBody = document.getElementById("seasonal-status-table-body");
-        seasonalStatusTableBody.innerHTML = data
-            .map(
-                (status) => `
-                <tr>
-                    <td>${status.plant_name}</td>
-                    <td>${status.start_date}</td>
-                    <td>${status.harvest_date}</td>
-                    <td>${status.current_stage}%</td>
-                </tr>
-            `
-            )
-            .join("");
-    } catch (error) {
-        console.error("Error fetching seasonal status:", error);
-    }
-}
-
-// Update seasonal status every 10 seconds
-setInterval(fetchSeasonalStatus, 10000);
-fetchSeasonalStatus(); // Initial call
-
-// Function to fetch and display harvest scheduler data
-async function fetchHarvestScheduler() {
-    try {
-        const response = await fetch("/harvest_scheduler");
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-
-        // Update the harvest scheduler table
-        const harvestSchedulerTableBody = document.getElementById("harvest-scheduler-table-body");
-        harvestSchedulerTableBody.innerHTML = data
-            .map(
-                (schedule) => `
-                <tr>
-                    <td>${schedule.plant_name}</td>
-                    <td>${schedule.predicted_harvest_date}</td>
-                </tr>
-            `
-            )
-            .join("");
-    } catch (error) {
-        console.error("Error fetching harvest scheduler data:", error);
-    }
-}
-
-// Update harvest scheduler data every 10 seconds
-setInterval(fetchHarvestScheduler, 10000);
-fetchHarvestScheduler(); // Initial call
-
 // Function to take a snapshot of the live feed
 function takeSnapshot() {
-    const videoFeed = document.querySelector(".video-feed img");
+    const videoFeed = document.querySelector(".video-feed img, .video-feed video");
     const canvas = document.createElement("canvas");
-    canvas.width = videoFeed.videoWidth;
-    canvas.height = videoFeed.videoHeight;
+    canvas.width = videoFeed.videoWidth || videoFeed.width;
+    canvas.height = videoFeed.videoHeight || videoFeed.height;
     const context = canvas.getContext("2d");
     context.drawImage(videoFeed, 0, 0, canvas.width, canvas.height);
 
-    // Convert the canvas to an image and download it
     const link = document.createElement("a");
     link.download = "snapshot.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
 }
+
+// Periodically fetch and update data
+setInterval(fetchSensorData, 2000);
+setInterval(fetchGrowthRateData, 5000);
+setInterval(fetchGrowthGraph, 5000);
+setInterval(fetchSeasonalStatus, 10000);
+setInterval(fetchHarvestScheduler, 10000);
+setInterval(updateDetectionData, 2000);
+
+// Initial data fetch
+fetchSensorData();
+fetchGrowthRateData();
+fetchGrowthGraph();
+fetchSeasonalStatus();
+fetchHarvestScheduler();
+updateDetectionData();

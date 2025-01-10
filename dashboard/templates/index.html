@@ -8,41 +8,30 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <!-- Header Bar -->
     <div class="header">
-        <!-- Left Side: Home Dashboard and IP Address -->
         <div class="header-left">
             <h1>Home Dashboard</h1>
             <div id="ip-address">IP: Loading...</div>
         </div>
-
-        <!-- Right Side: Date and Time -->
         <div id="datetime">Loading time...</div>
     </div>
 
-    <!-- Main Container -->
     <div class="main-container">
-        <!-- Left Jumbo Container (60% width) -->
         <div class="left-jumbo">
-            <!-- Video Feeds Section -->
             <div class="video-feeds">
                 <div class="video-feed">
-                    <!-- Live Weather Map -->
                     <div class="weather-map">
                         <iframe src="https://www.rainviewer.com/map.html?loc=42.3223,-83.1763,8&oFa=0&oC=0&oU=0&oCS=1&oF=0&oAP=0&c=1&o=83&lm=1&layer=radar&sm=1&sn=1" allowfullscreen></iframe>
                     </div>
                 </div>
                 <div class="video-feed">
                     <img src="{{ url_for('video_feed') }}" alt="Video Feed">
-                    <!-- Snapshot Button -->
                     <button class="snapshot-button" onclick="takeSnapshot()">Snapshot</button>
                 </div>
             </div>
 
-            <!-- Horizontal Rule -->
             <hr />
 
-            <!-- Sensor Widgets Section -->
             <div class="sensor-widgets">
                 <div class="widget">
                     <h2>Power</h2>
@@ -66,10 +55,8 @@
                 </div>
             </div>
 
-            <!-- Horizontal Rule -->
             <hr />
 
-            <!-- System Sensors Section -->
             <div class="system-sensors">
                 <div class="widget">
                     <h2>CPU Usage</h2>
@@ -86,19 +73,15 @@
             </div>
         </div>
 
-        <!-- Right Jumbo Container (40% width) -->
         <div class="right-jumbo">
-            <!-- 4-Box Layout -->
             <div class="four-box-layout">
-                <!-- Top Left: Detection Insights -->
                 <div class="box" id="detection-insights-box">
                     <h3>Detection Insights</h3>
                     <div id="detection-insights">
-                        <!-- Dynamic content will be added here -->
+                        <p>Loading detection insights...</p>
                     </div>
                 </div>
 
-                <!-- Top Right: Last 5 Detections -->
                 <div class="box">
                     <h3>Last 5 Detections</h3>
                     <table>
@@ -110,36 +93,33 @@
                             </tr>
                         </thead>
                         <tbody id="detections-table-body">
-                            <!-- Detections will be dynamically added here -->
+                            <tr><td colspan="3">Loading detections...</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Bottom Left: Growth Rate -->
                 <div class="box">
                     <h3>Growth Rate</h3>
                     <table>
                         <thead>
                             <tr>
                                 <th>Plant</th>
-                                <th>Rate</th>
-                                <th>Height</th>
-								<th>Time</th>
+                                <th>Rate </th>
+                                <th>Height </th>
+                                <th>Planted</th>
                             </tr>
                         </thead>
                         <tbody id="growth-rate-table-body">
-                            <!-- Growth rate data will be dynamically added here -->
+                            <tr><td colspan="4">Loading growth rate data...</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Bottom Right: Growth Graph -->
                 <div class="box">
                     <h3>Growth Graph</h3>
-                    <img id="growth-graph" src="" alt="Growth Graph" style="width: 100%; height: auto;">
+                    <img id="growth-graph" src="https://via.placeholder.com/400x200?text=Loading+Graph" alt="Growth Graph" style="width: 100%; height: auto;">
                 </div>
 
-                <!-- New Widget: Seasonal Status -->
                 <div class="box">
                     <h3>Seasonal Status</h3>
                     <table>
@@ -152,12 +132,11 @@
                             </tr>
                         </thead>
                         <tbody id="seasonal-status-table-body">
-                            <!-- Seasonal status data will be dynamically added here -->
+                            <tr><td colspan="4">Loading seasonal status...</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- New Widget: Harvest Scheduler -->
                 <div class="box">
                     <h3>Harvest Scheduler</h3>
                     <table>
@@ -168,7 +147,7 @@
                             </tr>
                         </thead>
                         <tbody id="harvest-scheduler-table-body">
-                            <!-- Harvest scheduler data will be dynamically added here -->
+                            <tr><td colspan="2">Loading harvest scheduler...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -179,151 +158,5 @@
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <script src="https://vjs.zencdn.net/7.15.4/video.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/videojs-flash@2.2.1/dist/videojs-flash.min.js"></script>
-    <script>
-        // Function to fetch and display growth rate data
-        function fetchGrowthRateData() {
-            fetch('/growth_rate')
-                .then(response => response.json())
-                .then(data => {
-                    const tableBody = document.getElementById('growth-rate-table-body');
-                    tableBody.innerHTML = ''; // Clear existing rows
-
-                    data.forEach(row => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${row.plant_name}</td>
-                            <td>${row.rate}</td>
-                            <td>${row.height}</td>
-							<td>${row.time}</td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                })
-                .catch(error => console.error('Error fetching growth rate data:', error));
-        }
-
-        // Function to fetch and display seasonal status data
-        function fetchSeasonalStatusData() {
-            fetch('/seasonal_status')
-                .then(response => response.json())
-                .then(data => {
-                    const tableBody = document.getElementById('seasonal-status-table-body');
-                    tableBody.innerHTML = ''; // Clear existing rows
-
-                    data.forEach(row => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${row.plant_name}</td>
-                            <td>${row.start_date}</td>
-                            <td>${row.harvest_date}</td>
-                            <td>${row.current_stage}%</td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                })
-                .catch(error => console.error('Error fetching seasonal status data:', error));
-        }
-
-        // Function to fetch and display harvest scheduler data
-        function fetchHarvestSchedulerData() {
-            fetch('/harvest_scheduler')
-                .then(response => response.json())
-                .then(data => {
-                    const tableBody = document.getElementById('harvest-scheduler-table-body');
-                    tableBody.innerHTML = ''; // Clear existing rows
-
-                    data.forEach(row => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${row.plant_name}</td>
-                            <td>${row.predicted_harvest_date}</td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                })
-                .catch(error => console.error('Error fetching harvest scheduler data:', error));
-        }
-
-        // Function to fetch and display the growth graph
-        function fetchGrowthGraph() {
-            fetch('/growth_graph')
-                .then(response => response.json())
-                .then(data => {
-                    const growthGraph = document.getElementById('growth-graph');
-                    growthGraph.src = `data:image/png;base64,${data.image}`;
-                })
-                .catch(error => console.error('Error fetching growth graph:', error));
-        }
-
-        // Function to fetch and display sensor data
-        function fetchSensorData() {
-            fetch('/sensor_data')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('analog-value').textContent = data.analog_value;
-                    document.getElementById('color-red').textContent = data.color_red;
-                    document.getElementById('accel-x').textContent = data.accel_x.toFixed(2);
-                    document.getElementById('pressure').textContent = data.pressure.toFixed(2);
-                    document.getElementById('temperature-sht').textContent = data.temperature_sht.toFixed(2);
-                    document.getElementById('cpu-usage').textContent = `${data.cpu_usage.toFixed(2)}%`;
-                    document.getElementById('ram-usage').textContent = `${data.ram_usage.toFixed(2)}%`;
-                    document.getElementById('storage-usage').textContent = `${data.storage_usage.toFixed(2)}%`;
-                    document.getElementById('ip-address').textContent = `IP: ${data.ip_address}`;
-                })
-                .catch(error => console.error('Error fetching sensor data:', error));
-        }
-
-        // Function to fetch and display the last 5 detections
-        function fetchInferenceData() {
-            fetch('/inference_data')
-                .then(response => response.json())
-                .then(data => {
-                    const tableBody = document.getElementById('detections-table-body');
-                    tableBody.innerHTML = ''; // Clear existing rows
-
-                    data.forEach(detection => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${detection.category}</td>
-                            <td>${detection.label}</td>
-                            <td>${detection.confidence.toFixed(2)}%</td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                })
-                .catch(error => console.error('Error fetching inference data:', error));
-        }
-
-        // Function to update the date and time
-        function updateDateTime() {
-            const now = new Date();
-            const datetimeElement = document.getElementById('datetime');
-            datetimeElement.textContent = now.toLocaleString();
-        }
-
-        // Fetch and display all data on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchGrowthRateData();
-            fetchSeasonalStatusData();
-            fetchHarvestSchedulerData();
-            fetchGrowthGraph();
-            fetchSensorData();
-            fetchInferenceData();
-            updateDateTime();
-
-            // Update the date and time every second
-            setInterval(updateDateTime, 1000);
-
-            // Refresh data every 10 seconds
-            setInterval(() => {
-                fetchGrowthRateData();
-                fetchSeasonalStatusData();
-                fetchHarvestSchedulerData();
-                fetchGrowthGraph();
-                fetchSensorData();
-                fetchInferenceData();
-            }, 10000);
-        });
-    </script>
 </body>
 </html>

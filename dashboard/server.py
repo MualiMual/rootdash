@@ -2,11 +2,13 @@ from flask import Flask, render_template, jsonify, Response
 from collections import deque
 import random
 import time
+import matplotlib.pyplot as plt
+import io
+import base64
 import mariadb
 from models.models import load_models  # Import from models module
 from utils.camera import get_camera
 from models.object_detection import generate_frames as generate_frames_with_detection  # Import object detection
-
 app = Flask(__name__)
 
 # MariaDB configuration
@@ -115,69 +117,96 @@ def inference_data():
 
 @app.route("/growth_graph")
 def growth_graph():
-    """Simulate a growth graph and store it in MariaDB."""
-    import matplotlib.pyplot as plt
-    import io
-    import base64
+    """Fetch growth data from the database and return a base64-encoded image of the graph."""
+    try:
+        # Fetch data from the database
+        conn = get_db_connection()
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT plant_name, height, time_after_planting FROM growth_rate ORDER BY time_after_planting")
+            rows = cursor.fetchall()
+            conn.close()
 
-    plt.figure(figsize=(6, 4))
-    plt.plot([10, 15, 20, 25, 30], label="Plant A")
-    plt.plot([5, 10, 15, 20, 25], label="Plant B")
-    plt.plot([8, 12, 16, 20, 24], label="Plant C")
-    plt.title("Plant Growth Over Time")
-    plt.xlabel("Time (Days)")
-    plt.ylabel("Height (cm)")
-    plt.legend()
-    plt.grid(True)
+            # Debugging: Print fetched data
+            print("Fetched Data:", rows)
 
-    # Save the plot to a BytesIO object
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    plt.close()
+            if not rows:
+                return jsonify({"error": "No growth data found"}), 404
 
-    # Encode the image to base64
-    image_base64 = base64.b64encode(buf.read()).decode("utf-8")
+            # Organize data for plotting
+            data = {}
+            for row in rows:
+                plant_name = row[0]
+                height = float(row[1])  # Convert Decimal to float for plotting
+                time_after_planting = row[2]
 
-    # Insert growth graph data into MariaDB
+                if plant_name not in data:
+                    data[plant_name] = {"time": [], "height": []}
+                data[plant_name]["time"].append(time_after_planting)
+                data[plant_name]["height"].append(height)
+
+            # Debugging: Print organized data
+            print("Organized Data:", data)
+
+            # Create the growth graph
+            plt.figure(figsize=(10, 6))  # Increase figure size for better readability
+            for plant_name, values in data.items():
+                plt.plot(values["time"], values["height"], label=plant_name, marker='o')  # Add markers for data points
+
+            plt.title("Plant Growth Over Time")
+            plt.xlabel("Time (Days)")
+            plt.ylabel("Height (cm)")
+            plt.legend(loc="upper left", bbox_to_anchor=(1, 1))  # Move legend outside the plot
+            plt.grid(True)
+            plt.tight_layout()  # Adjust layout to prevent overlap
+
+            # Save the plot to a BytesIO object
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png", bbox_inches="tight")  # Ensure the entire plot is saved
+            buf.seek(0)
+            plt.close()
+
+            # Encode the image to base64
+            image_base64 = base64.b64encode(buf.read()).decode("utf-8")
+            print(f"Generated graph with base64 length: {len(image_base64)}")  # Debugging
+            return jsonify({"image": image_base64})
+        else:
+            return jsonify({"error": "Failed to connect to the database"}), 500
+    except Exception as e:
+        print(f"Error generating growth graph: {e}")
+        return jsonify({"error": "Failed to generate growth graph"}), 500
+
+@app.route("/stored_growth_graph")
+def stored_growth_graph():
+    """Return the latest stored growth graph image from MariaDB."""
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO growth_graph (image) VALUES (?)
-        ''', (image_base64,))
-        conn.commit()
+        cursor.execute("SELECT image FROM growth_graph ORDER BY id DESC LIMIT 1")
+        row = cursor.fetchone()
         conn.close()
-
-    return jsonify({"image": image_base64})
+        if row:
+            return jsonify({"image": row[0]})
+        else:
+            return jsonify({"error": "No graph images found"}), 404
+    return jsonify({"error": "Failed to connect to the database"}), 500
 
 @app.route("/growth_rate")
 def growth_rate():
-    """Return growth rate data and store it in MariaDB."""
-    growth_rate_data = [
-        {"plant_name": "Plant A", "rate": "10 cm", "height": "30 cm", "time_after_planting": "2 weeks"},
-        {"plant_name": "Plant B", "rate": "5 cm", "height": "25 cm", "time_after_planting": "3 weeks"},
-        {"plant_name": "Plant C", "rate": "8 cm", "height": "24 cm", "time_after_planting": "4 weeks"},
-    ]
-
-    # Insert growth rate data into MariaDB
+    """Return growth rate data from MariaDB."""
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        for data in growth_rate_data:
-            cursor.execute('''
-                INSERT INTO growth_rate (plant_name, rate, height, time_after_planting)
-                VALUES (?, ?, ?, ?)
-            ''', (
-                data["plant_name"],
-                data["rate"],
-                data["height"],
-                data["time_after_planting"]
-            ))
-        conn.commit()
+        cursor.execute("SELECT plant_name, rate, height, time_after_planting FROM growth_rate")
+        data = cursor.fetchall()
         conn.close()
-
-    return jsonify(growth_rate_data)
+        return jsonify([{
+            "plant_name": row[0],
+            "rate": row[1],
+            "height": row[2],
+            "time_after_planting": row[3]
+        } for row in data])
+    return jsonify([])
 
 @app.route("/seasonal_status")
 def seasonal_status():
