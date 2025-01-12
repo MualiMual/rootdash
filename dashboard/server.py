@@ -4,8 +4,10 @@ import random
 import time
 import matplotlib.pyplot as plt
 import io
+import os
 import base64
 import mariadb
+from datetime import datetime, timedelta
 from models.models import load_models  # Import from models module
 from utils.camera import get_camera
 from models.object_detection import generate_frames as generate_frames_with_detection  # Import object detection
@@ -114,7 +116,6 @@ def inference_data():
     """Return the last 5 inference results."""
     global last_detections
     return jsonify(list(last_detections))
-
 @app.route("/growth_graph")
 def growth_graph():
     """Fetch growth data from the database and return a base64-encoded image of the graph."""
@@ -123,7 +124,18 @@ def growth_graph():
         conn = get_db_connection()
         if conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT plant_name, height, time_after_planting FROM growth_rate ORDER BY time_after_planting")
+            cursor.execute('''
+                SELECT 
+                    p.name AS plant_name, 
+                    gr.height, 
+                    gr.time_after_planting
+                FROM 
+                    growth_rate gr
+                JOIN 
+                    plants p ON gr.plant_id = p.id
+                ORDER BY 
+                    gr.time_after_planting
+            ''')
             rows = cursor.fetchall()
             conn.close()
 
@@ -197,14 +209,24 @@ def growth_rate():
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT plant_name, rate, height, time_after_planting FROM growth_rate")
+        cursor.execute('''
+            SELECT 
+                gr.rate, 
+                gr.height, 
+                gr.time_after_planting, 
+                p.name AS plant_name
+            FROM 
+                growth_rate gr
+            JOIN 
+                plants p ON gr.plant_id = p.id
+        ''')
         data = cursor.fetchall()
         conn.close()
         return jsonify([{
-            "plant_name": row[0],
-            "rate": row[1],
-            "height": row[2],
-            "time_after_planting": row[3]
+            "rate": row[0],
+            "height": row[1],
+            "time_after_planting": row[2],
+            "plant_name": row[3]
         } for row in data])
     return jsonify([])
 
@@ -243,57 +265,81 @@ def track_plant_growth(detections):
 
 @app.route("/seasonal_status")
 def seasonal_status():
-    """Return seasonal status data and store it in MariaDB."""
-    seasonal_status_data = [
-        {"plant_name": "Tomato", "start_date": "2023-09-01", "harvest_date": "2023-11-15", "current_stage": random.randint(30, 70)},
-        {"plant_name": "Lettuce", "start_date": "2023-09-10", "harvest_date": "2023-11-01", "current_stage": random.randint(40, 80)},
-        {"plant_name": "Pepper", "start_date": "2023-08-20", "harvest_date": "2023-11-10", "current_stage": random.randint(50, 90)},
-    ]
-
-    # Insert seasonal status data into MariaDB
+    """Calculate seasonal status based on growth_rate data."""
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        for data in seasonal_status_data:
-            cursor.execute('''
-                INSERT INTO seasonal_status (plant_name, start_date, harvest_date, current_stage)
-                VALUES (?, ?, ?, ?)
-            ''', (
-                data["plant_name"],
-                data["start_date"],
-                data["harvest_date"],
-                data["current_stage"]
-            ))
-        conn.commit()
+        cursor.execute('''
+            SELECT 
+                gr.time_after_planting, 
+                p.name AS plant_name
+            FROM 
+                growth_rate gr
+            JOIN 
+                plants p ON gr.plant_id = p.id
+        ''')
+        data = cursor.fetchall()
         conn.close()
 
-    return jsonify(seasonal_status_data)
+        seasonal_status_data = []
+        for row in data:
+            time_after_planting = row[0]
+            plant_name = row[1]
+
+            # Calculate start_date dynamically if not available in the database
+            start_date = (datetime.now() - timedelta(days=time_after_planting)).strftime("%Y-%m-%d")
+
+            # Calculate current_stage based on time_after_planting
+            if time_after_planting < 30:
+                current_stage = "Early Growth"
+            elif 30 <= time_after_planting < 60:
+                current_stage = "Mid Growth"
+            else:
+                current_stage = "Late Growth"
+
+            seasonal_status_data.append({
+                "plant_name": plant_name,
+                "start_date": start_date,  # Include start_date in the response
+                "current_stage": current_stage
+            })
+
+        return jsonify(seasonal_status_data)
+    return jsonify([])
 
 @app.route("/harvest_scheduler")
 def harvest_scheduler():
-    """Return harvest scheduler data and store it in MariaDB."""
-    harvest_scheduler_data = [
-        {"plant_name": "Tomato", "predicted_harvest_date": "2023-11-15"},
-        {"plant_name": "Lettuce", "predicted_harvest_date": "2023-11-01"},
-        {"plant_name": "Pepper", "predicted_harvest_date": "2023-11-10"},
-    ]
-
-    # Insert harvest scheduler data into MariaDB
+    """Predict harvest dates based on growth_rate data."""
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        for data in harvest_scheduler_data:
-            cursor.execute('''
-                INSERT INTO harvest_scheduler (plant_name, predicted_harvest_date)
-                VALUES (?, ?)
-            ''', (
-                data["plant_name"],
-                data["predicted_harvest_date"]
-            ))
-        conn.commit()
+        cursor.execute('''
+            SELECT 
+                gr.time_after_planting, 
+                p.name AS plant_name
+            FROM 
+                growth_rate gr
+            JOIN 
+                plants p ON gr.plant_id = p.id
+        ''')
+        data = cursor.fetchall()
         conn.close()
 
-    return jsonify(harvest_scheduler_data)
+        harvest_scheduler_data = []
+        for row in data:
+            time_after_planting = row[0]
+            plant_name = row[1]
+
+            # Predict harvest date (assuming a fixed growth period of 90 days)
+            planting_date = datetime.now() - timedelta(days=time_after_planting)
+            predicted_harvest_date = planting_date + timedelta(days=90)
+
+            harvest_scheduler_data.append({
+                "plant_name": plant_name,
+                "predicted_harvest_date": predicted_harvest_date.strftime("%Y-%m-%d")
+            })
+
+        return jsonify(harvest_scheduler_data)
+    return jsonify([])
 
 @app.route("/video_feed")
 def video_feed():

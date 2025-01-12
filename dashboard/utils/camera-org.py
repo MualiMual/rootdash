@@ -1,4 +1,3 @@
-# camera.py
 import cv2
 
 def get_camera():
