@@ -21,12 +21,14 @@ updateDateTime(); // Initial call
 
 // Reusable function to fetch and display data in a table
 async function fetchData(url, tableId, rowTemplate) {
+    const tableBody = document.getElementById(tableId);
+    tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`; // Show loading indicator
+
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        const tableBody = document.getElementById(tableId);
-        tableBody.innerHTML = '';
+        tableBody.innerHTML = ''; // Clear loading indicator
         data.forEach(row => {
             const tr = document.createElement('tr');
             tr.innerHTML = rowTemplate(row);
@@ -34,7 +36,6 @@ async function fetchData(url, tableId, rowTemplate) {
         });
     } catch (error) {
         console.error(`Error fetching data from ${url}:`, error);
-        const tableBody = document.getElementById(tableId);
         tableBody.innerHTML = `<tr><td colspan="4">Failed to load data. Please try again later.</td></tr>`;
     }
 }

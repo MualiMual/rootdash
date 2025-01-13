@@ -7,14 +7,14 @@ body {
     padding: 0;
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Full viewport height */
-    overflow: hidden; /* Prevent scrolling */
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* Header Bar */
 .header {
     width: 100%;
-    background-color: #a0a0a0; /* Light metal grey */
+    background-color: #a0a0a0;
     color: white;
     padding: 10px 20px;
     display: flex;
@@ -26,28 +26,26 @@ body {
     z-index: 1000;
 }
 
-/* Left Side: Home Dashboard and IP Address */
 .header-left {
     display: flex;
     align-items: center;
-    gap: 10px; /* Spacing between title and IP */
+    gap: 10px;
 }
 
 .header h1 {
     margin: 0;
-    font-size: 18px; /* Smaller header text */
-    font-weight: bold; /* Bold headers */
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .header #ip-address {
     font-size: 14px;
     font-family: monospace;
-    color: #e0e0e0; /* Light grey for contrast */
+    color: #e0e0e0;
 }
 
-/* Right Side: Date and Time */
 .header #datetime {
-    font-size: 14px; /* Smaller header text */
+    font-size: 14px;
     font-family: monospace;
 }
 
@@ -55,29 +53,18 @@ body {
 .main-container {
     display: flex;
     flex: 1;
-    margin-top: 60px; /* Offset for fixed header */
-    overflow: hidden; /* Prevent scrolling */
+    margin-top: 60px;
+    overflow: hidden;
 }
 
 /* Left Jumbo Container (60% width) */
 .left-jumbo {
-    width: 60%; /* 60% of the row */
+    width: 60%;
     display: flex;
     flex-direction: column;
     padding: 20px;
-    overflow: hidden; /* Prevent scrolling */
-}
-
-/* Right Jumbo Container (40% width) */
-.right-jumbo {
-    width: 40%; /* 40% of the row */
-    background-color: #e0e0e0; /* Light grey */
-    padding: 20px;
-    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1); /* Shadow on the left side */
-    display: flex;
-    flex-direction: column;
-    gap: 20px; /* Spacing between boxes */
-    overflow: hidden; /* Prevent scrolling */
+    gap: 20px;
+    overflow: hidden;
 }
 
 /* Video Feeds Section */
@@ -91,13 +78,13 @@ body {
 
 .video-feed {
     flex: 1;
-    background-color: #d0d0d0; /* Medium grey */
-    border-radius: 8px; /* Slightly rounded corners */
+    background-color: #d0d0d0;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    position: relative; /* For the snapshot button */
+    position: relative;
 }
 
 .video-feed img {
@@ -105,12 +92,18 @@ body {
     max-height: 100%;
 }
 
+.weather-map iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
 /* Snapshot Button */
 .snapshot-button {
     position: absolute;
-    bottom: 10px; /* Position inside the video feed */
+    bottom: 10px;
     right: 10px;
-    background-color: #007bff; /* Blue */
+    background-color: #007bff;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -120,66 +113,22 @@ body {
 }
 
 .snapshot-button:hover {
-    background-color: #0056b3; /* Darker blue on hover */
+    background-color: #0056b3;
 }
 
-/* Weather Map Section */
-.weather-map {
-    flex: 1;
-    background-color: #d0d0d0; /* Medium grey */
-    border-radius: 8px; /* Slightly rounded corners */
-    overflow: hidden;
-    height: 100%; /* Full height */
-}
-
-.weather-map iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-/* Sensor Widgets Section */
-.sensor-widgets {
+/* Sensor Stats Section */
+.sys-stats {
     display: flex;
-    justify-content: flex-start; /* Align widgets to the left */
-    gap: 10px; /* Reduced spacing between widgets */
-    flex-wrap: wrap; /* Allow widgets to wrap to the next row if needed */
-    margin-bottom: 10px; /* Add some spacing below the sensor widgets */
-    position: relative; /* For the "Outside" label */
+    justify-content: space-between;
+    gap: 20px;
 }
 
-.sensor-widgets::before {
-    content: "Outside";
-    position: absolute;
-    top: -20px;
-    left: 0;
-    font-size: 12px;
-    color: #555;
-    font-weight: bold;
-}
-
-/* System Sensors Section */
-.system-sensors {
+.sensor-outside, .sensor-inside {
     display: flex;
-    justify-content: flex-start; /* Align widgets to the left */
-    gap: 10px; /* Reduced spacing between widgets */
-    flex-wrap: wrap; /* Allow widgets to wrap to the next row if needed */
-    background-color: transparent; /* Transparent background */
-    margin-top: 10px; /* Add some spacing above the system sensors */
-    position: relative; /* For the "System" label */
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-.system-sensors::before {
-    content: "System";
-    position: absolute;
-    top: -20px;
-    left: 0;
-    font-size: 12px;
-    color: #555;
-    font-weight: bold;
-}
-
-/* Widget Styles */
 .widget {
     background-color: #fff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -189,45 +138,40 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin: 0; /* Remove margin to reduce spacing */
+    border-radius: 8px;
+    width: 35px;
+    height: 20px;
 }
 
-/* Round Widgets (Left Jumbo Container) */
-.left-jumbo .widget {
-    border-radius: 50%; /* Perfectly round */
-    width: 80px; /* Fixed width */
-    height: 80px; /* Fixed height */
+.widget h2, .widget h5 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: bold;
 }
 
-/* Square Widgets with Subtle Rounded Edges (Right Jumbo Container) */
-.right-jumbo .widget {
-    border-radius: 8px; /* Subtle rounded edges */
-    width: 100px; /* Fixed width */
-    height: 100px; /* Fixed height */
+.widget p {
+    margin: 0;
+    font-size: 12px;
 }
 
-/* System Widgets (Square) */
-.system-sensors .widget {
-    border-radius: 8px; /* Subtle rounded edges */
-    width: 100px; /* Fixed width */
-    height: 100px; /* Fixed height */
+/* Right Jumbo Container (40% width) */
+.right-jumbo {
+    width: 40%;
+    background-color: #e0e0e0;
+    padding: 20px;
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
 }
 
-/* Horizontal Rule */
-hr {
-    border: 0;
-    height: 1px;
-    background-color: #ccc; /* Light grey */
-    margin: 20px 0; /* Add some spacing around the rule */
-}
-
-/* 4-Box Layout in Right Jumbo Container */
+/* 4-Box Layout */
 .four-box-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Two columns */
-    grid-template-rows: auto auto; /* Auto rows to fit content */
-    gap: 20px; /* Spacing between boxes */
-    height: auto; /* Fit content height */
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3, auto);
+    gap: 20px;
 }
 
 .box {
@@ -235,59 +179,28 @@ hr {
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    overflow: hidden; /* Prevent scrollbars */
-}
-
-.box.highlight {
-    border: 3px solid #ff0000; /* Bold red border for highlighting */
+    overflow: hidden;
 }
 
 .box h3 {
     margin: 0 0 10px 0;
     font-size: 14px;
     color: #555;
-    font-weight: bold; /* Bold headers */
+    font-weight: bold;
 }
 
-/* Detection Insights Section */
-#detection-insights {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.insight-card {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.insight-card img {
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    object-fit: cover;
-}
-
-.insight-card .content {
-    flex: 1;
-}
-
-.insight-card h4 {
-    margin: 0 0 5px 0;
-    font-size: 14px;
-    color: #333;
-    font-weight: bold; /* Bold headers */
-}
-
-.insight-card p {
-    margin: 0;
-    font-size: 12px;
+.loading {
+    padding: 10px;
+    text-align: center;
+    font-style: italic;
     color: #666;
+}
+
+.error {
+    padding: 10px;
+    text-align: center;
+    color: #ff0000;
+    font-weight: bold;
 }
 
 /* Responsive Design */
@@ -297,22 +210,22 @@ hr {
     }
 
     .left-jumbo, .right-jumbo {
-        width: 100%; /* Full width on small screens */
+        width: 100%;
         height: auto;
     }
 
-    .video-feeds, .sensor-widgets, .system-sensors {
+    .video-feeds, .sensor-outside, .sensor-inside {
         flex-direction: column;
         gap: 10px;
     }
 
     .video-feed, .widget {
         width: 100%;
-        flex: 1 1 auto; /* Full width on small screens */
+        flex: 1 1 auto;
     }
 
     .four-box-layout {
-        grid-template-columns: 1fr; /* Single column on small screens */
-        grid-template-rows: auto; /* Auto rows */
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
     }
 }
