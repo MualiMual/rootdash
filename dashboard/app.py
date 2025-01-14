@@ -5,6 +5,7 @@ import time
 import matplotlib.pyplot as plt
 import io
 import os
+import subprocess
 import base64
 import mariadb
 from datetime import datetime, timedelta
@@ -12,11 +13,15 @@ from src.utils.camera import get_camera
 from src.utils.edgedevice import load_models  # Import from edge device
 # Models----------------
 from src.models.time_lapse1 import capture_time_lapse
-from src.models.image_analysis2 import analyze_image
+from src.models.analyze_image import analyze_image
 from src.models.object_detection import generate_frames as generate_frames_with_detection  # Import object detection
 import threading
+import logging
 
 app = Flask(__name__)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # MariaDB configuration
 app.config['MYSQL_HOST'] = 'localhost'
@@ -25,7 +30,10 @@ app.config['MYSQL_PASSWORD'] = 'your_password'
 app.config['MYSQL_DB'] = 'rootdash'
 
 # Time-lapse configuration
-app.config['TIME_LAPSE_FOLDER'] = "./media/time_lapse"  # Folder to save time-lapse images
+#app.config['TIME_LAPSE_FOLDER'] = "./media/time_lapse"  # Folder to save time-lapse images
+
+# Use an absolute path for TIME_LAPSE_FOLDER
+app.config['TIME_LAPSE_FOLDER'] = os.path.abspath("./media/time_lapse")
 
 # Connect to MariaDB
 def get_db_connection():
@@ -38,7 +46,7 @@ def get_db_connection():
         )
         return conn
     except mariadb.Error as e:
-        print(f"Error connecting to MariaDB: {e}")
+        logging.error(f"Error connecting to MariaDB: {e}")
         return None
 
 # Global variable to store the last 5 inference results
@@ -137,22 +145,35 @@ def start_time_lapse():
 
 @app.route("/analyze_images", methods=["POST"])
 def analyze_images():
-    """Analyze all time-lapse images."""
+    """Run the analyze_image.py script as a subprocess."""
     try:
-        image_folder = app.config['TIME_LAPSE_FOLDER']
-        if not os.path.exists(image_folder):
-            return jsonify({"message": "No time-lapse images found!"}), 404
+        # Get the absolute path to the analyze_image.py script
+        script_path = os.path.abspath("src/models/analyze_image.py")
 
-        for image_name in os.listdir(image_folder):
-            image_path = os.path.join(image_folder, image_name)
-            if os.path.isfile(image_path):
-                plant_data = analyze_image(image_path)
-                for data in plant_data:
-                    # Insert data into the database
-                    insert_time_lapse_data(image_name, data["width"], data["height"])
-        return jsonify({"message": "Image analysis completed successfully!"}), 200
+        # Check if the script exists
+        if not os.path.exists(script_path):
+            logging.error(f"Script not found: {script_path}")
+            return jsonify({"message": "Script not found!"}), 404
+
+        # Run the script using subprocess
+        logging.info(f"Running script: {script_path}")
+        result = subprocess.run(
+            ["python", script_path],  # Command to execute the script
+            capture_output=True,      # Capture stdout and stderr
+            text=True                 # Return output as a string
+        )
+
+        # Log the script's output and errors
+        if result.returncode == 0:
+            logging.info(f"Script output: {result.stdout}")
+            return jsonify({"message": "Script executed successfully!", "output": result.stdout}), 200
+        else:
+            logging.error(f"Script failed with error: {result.stderr}")
+            return jsonify({"message": "Script execution failed!", "error": result.stderr}), 500
+
     except Exception as e:
-        return jsonify({"message": f"Failed to analyze images: {str(e)}"}), 500
+        logging.error(f"Error running script: {e}")
+        return jsonify({"message": f"Failed to run script: {str(e)}"}), 500
 
 def insert_time_lapse_data(image_name, width, height):
     """Insert time-lapse data into the database."""
@@ -237,7 +258,7 @@ def growth_graph():
         else:
             return jsonify({"error": "Failed to connect to the database"}), 500
     except Exception as e:
-        print(f"Error generating growth graph: {e}")
+        logging.error(f"Error generating growth graph: {e}")
         return jsonify({"error": "Failed to generate growth graph"}), 500
 
 @app.route("/stored_growth_graph")
