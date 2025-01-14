@@ -85,6 +85,7 @@ body {
     justify-content: center;
     overflow: hidden;
     position: relative;
+    min-height: 200px; /* Ensure minimum height for buttons */
 }
 
 .video-feed img {
@@ -98,22 +99,43 @@ body {
     border: none;
 }
 
-/* Snapshot Button */
-.snapshot-button {
+/* Buttons (Snapshot, Time-Lapse, Analyze) */
+.snapshot-button,
+.timelapse-button,
+.analyze-button {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
+    bottom: 5px;
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 5px 10px;
     border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
+    z-index: 10; /* Ensure buttons appear above other content */
+    transition: background-color 0.3s ease;
 }
 
-.snapshot-button:hover {
+.snapshot-button:hover,
+.timelapse-button:hover,
+.analyze-button:hover {
     background-color: #0056b3;
+}
+
+/* Position the Snapshot button on the right */
+.snapshot-button {
+    right: 10px;
+	
+}
+
+/* Position the Time-Lapse button next to the Snapshot button */
+.timelapse-button {
+    left: 10px; /* Adjust based on button width and spacing */
+}
+
+/* Position the Analyze button next to the Time-Lapse button */
+.analyze-button {
+    left: 170px; /* Adjust based on button width and spacing */
 }
 
 /* Sensor Stats Section */
@@ -123,7 +145,8 @@ body {
     gap: 20px;
 }
 
-.sensor-outside, .sensor-inside {
+.sensor-outside,
+.sensor-inside {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
@@ -143,7 +166,8 @@ body {
     height: 20px;
 }
 
-.widget h2, .widget h5 {
+.widget h2,
+.widget h5 {
     margin: 0;
     font-size: 12px;
     font-weight: bold;
@@ -209,17 +233,21 @@ body {
         flex-direction: column;
     }
 
-    .left-jumbo, .right-jumbo {
+    .left-jumbo,
+    .right-jumbo {
         width: 100%;
         height: auto;
     }
 
-    .video-feeds, .sensor-outside, .sensor-inside {
+    .video-feeds,
+    .sensor-outside,
+    .sensor-inside {
         flex-direction: column;
         gap: 10px;
     }
 
-    .video-feed, .widget {
+    .video-feed,
+    .widget {
         width: 100%;
         flex: 1 1 auto;
     }
@@ -228,4 +256,26 @@ body {
         grid-template-columns: 1fr;
         grid-template-rows: auto;
     }
+
+    /* Adjust button positions for smaller screens */
+    .snapshot-button,
+    .timelapse-button,
+    .analyze-button {
+       
+        margin-top: 10px;
+        width: 80%;
+    }
+
+    .snapshot-button {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 10; /* Ensure the button is above other elements */
 }

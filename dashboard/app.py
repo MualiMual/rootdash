@@ -8,9 +8,14 @@ import os
 import base64
 import mariadb
 from datetime import datetime, timedelta
-from models.models import load_models  # Import from models module
-from utils.camera import get_camera
-from models.object_detection import generate_frames as generate_frames_with_detection  # Import object detection
+from src.utils.camera import get_camera
+from src.utils.edgedevice import load_models  # Import from edge device
+# Models----------------
+from src.models.time_lapse1 import capture_time_lapse
+from src.models.image_analysis2 import analyze_image
+from src.models.object_detection import generate_frames as generate_frames_with_detection  # Import object detection
+import threading
+
 app = Flask(__name__)
 
 # MariaDB configuration
@@ -18,6 +23,9 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'rootdash_user'
 app.config['MYSQL_PASSWORD'] = 'your_password'
 app.config['MYSQL_DB'] = 'rootdash'
+
+# Time-lapse configuration
+app.config['TIME_LAPSE_FOLDER'] = "./media/time_lapse"  # Folder to save time-lapse images
 
 # Connect to MariaDB
 def get_db_connection():
@@ -111,11 +119,62 @@ def sensor_data():
 
     return jsonify({**sensor_data, **system_stats})
 
+@app.route("/start_time_lapse", methods=["POST"])
+def start_time_lapse():
+    """Start capturing time-lapse images in a separate thread."""
+    try:
+        # Start the time-lapse capture in a separate thread
+        thread = threading.Thread(target=capture_time_lapse, kwargs={
+            'output_folder': app.config['TIME_LAPSE_FOLDER'],
+            'interval': 3600,  # 1 hour interval
+            'num_images': 10   # Capture 10 images
+        })
+        thread.daemon = True  # Daemonize thread to exit when the main program exits
+        thread.start()
+        return jsonify({"message": "Time-lapse capture started successfully!"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to start time-lapse capture: {str(e)}"}), 500
+
+@app.route("/analyze_images", methods=["POST"])
+def analyze_images():
+    """Analyze all time-lapse images."""
+    try:
+        image_folder = app.config['TIME_LAPSE_FOLDER']
+        if not os.path.exists(image_folder):
+            return jsonify({"message": "No time-lapse images found!"}), 404
+
+        for image_name in os.listdir(image_folder):
+            image_path = os.path.join(image_folder, image_name)
+            if os.path.isfile(image_path):
+                plant_data = analyze_image(image_path)
+                for data in plant_data:
+                    # Insert data into the database
+                    insert_time_lapse_data(image_name, data["width"], data["height"])
+        return jsonify({"message": "Image analysis completed successfully!"}), 200
+    except Exception as e:
+        return jsonify({"message": f"Failed to analyze images: {str(e)}"}), 500
+
+def insert_time_lapse_data(image_name, width, height):
+    """Insert time-lapse data into the database."""
+    timestamp = image_name.split("_")[1].split(".")[0]  # Extract timestamp from filename
+    query = """
+        INSERT INTO time_lapse_data (timestamp, plant_id, width, height, image_path)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+    values = (timestamp, 1, width, height, image_name)  # Replace 1 with actual plant ID
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute(query, values)
+        conn.commit()
+        conn.close()
+
 @app.route("/inference_data")
 def inference_data():
     """Return the last 5 inference results."""
     global last_detections
     return jsonify(list(last_detections))
+
 @app.route("/growth_graph")
 def growth_graph():
     """Fetch growth data from the database and return a base64-encoded image of the graph."""
@@ -139,9 +198,6 @@ def growth_graph():
             rows = cursor.fetchall()
             conn.close()
 
-            # Debugging: Print fetched data
-            print("Fetched Data:", rows)
-
             if not rows:
                 return jsonify({"error": "No growth data found"}), 404
 
@@ -156,9 +212,6 @@ def growth_graph():
                     data[plant_name] = {"time": [], "height": []}
                 data[plant_name]["time"].append(time_after_planting)
                 data[plant_name]["height"].append(height)
-
-            # Debugging: Print organized data
-            print("Organized Data:", data)
 
             # Create the growth graph
             plt.figure(figsize=(10, 6))  # Increase figure size for better readability
@@ -180,7 +233,6 @@ def growth_graph():
 
             # Encode the image to base64
             image_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            print(f"Generated graph with base64 length: {len(image_base64)}")  # Debugging
             return jsonify({"image": image_base64})
         else:
             return jsonify({"error": "Failed to connect to the database"}), 500
@@ -229,39 +281,6 @@ def growth_rate():
             "plant_name": row[3]
         } for row in data])
     return jsonify([])
-
-# Function to calculate bounding box size and track growth
-def track_plant_growth(detections):
-    """Calculate bounding box size, track changes over time, and estimate growth rates."""
-    for detection in detections:
-        plant_name = detection["plant_name"]
-        x_min, y_min, x_max, y_max = detection["bbox"]
-
-        # Calculate bounding box width and height in pixels
-        width_px = x_max - x_min
-        height_px = y_max - y_min
-
-        # Convert pixel measurements to real-world dimensions (e.g., cm)
-        width_cm = width_px / PIXELS_PER_CM
-        height_cm = height_px / PIXELS_PER_CM
-
-        # Store the size for this plant
-        plant_sizes[plant_name].append({
-            "time": time.time(),  # Current timestamp
-            "width_cm": width_cm,
-            "height_cm": height_cm
-        })
-
-        # Calculate growth rate (if there are at least 2 data points)
-        if len(plant_sizes[plant_name]) >= 2:
-            prev_size = plant_sizes[plant_name][-2]
-            curr_size = plant_sizes[plant_name][-1]
-
-            time_diff = curr_size["time"] - prev_size["time"]
-            width_growth_rate = (curr_size["width_cm"] - prev_size["width_cm"]) / time_diff
-            height_growth_rate = (curr_size["height_cm"] - prev_size["height_cm"]) / time_diff
-
-            print(f"Plant: {plant_name}, Width Growth Rate: {width_growth_rate:.2f} cm/s, Height Growth Rate: {height_growth_rate:.2f} cm/s")
 
 @app.route("/seasonal_status")
 def seasonal_status():

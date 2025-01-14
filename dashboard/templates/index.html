@@ -28,6 +28,8 @@
                 <div class="video-feed">
                     <img src="{{ url_for('video_feed') }}" alt="Video Feed">
                     <button class="snapshot-button" onclick="takeSnapshot()">Snapshot</button>
+					<button class="timelapse-button" onclick="startTimeLapse()">Start Time-Lapse</button>
+					<button class="analyze-button" onclick="analyzeImages()">Analyze Images</button>
                 </div>
             </div>
 
@@ -162,6 +164,8 @@
     </div>
 
 	    <!-- Scripts -->
+	<script type="module" src="{{ url_for('static', filename='js/analyze.js') }}"></script>
+	<script type="module" src="{{ url_for('static', filename='js/timelapse.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/routing.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/utils.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/dataFetch.js') }}"></script>
