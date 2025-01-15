@@ -42,9 +42,10 @@ export async function updateDetectionData() {
         // Create the insight card
         const insightCard = `
             <div class="insight-card">
-                <img src="${imageUrl}" alt="${highestConfidenceDetection.label}">
+				
+			
                 <div class="content">
-                    <h4>Breaking: ${highestConfidenceDetection.label} detected with ${highestConfidenceDetection.confidence.toFixed(2)} confidence!</h4>
+                    <h6>Breaking: ${highestConfidenceDetection.label} detected with ${highestConfidenceDetection.confidence.toFixed(2)} confidence!</h6>
                     <p>Did you know? ${highestConfidenceDetection.label} is a fascinating species!</p>
                     <p>Stay tuned for more updates on detected objects in your environment.</p>
                 </div>

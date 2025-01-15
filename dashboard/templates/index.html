@@ -28,11 +28,11 @@
                 <div class="video-feed">
                     <img src="{{ url_for('video_feed') }}" alt="Video Feed">
                     <button class="snapshot-button" onclick="takeSnapshot()">Snapshot</button>
-					<button class="timelapse-button" onclick="startTimeLapse()">Start Time-Lapse</button>
-					<button class="analyze-button" onclick="analyzeImages()">Analyze Images</button>
+					<button class="timelapse-button" onclick="startTimeLapse()">Time-Lapse</button>
+					<button class="analyze-button" onclick="analyzeImages()">Analyze</button>
                 </div>
             </div>
-
+			
             <!-- Sensor Stats Section -->
             <div class="sys-stats">
                 <!-- Outside Sensors -->
@@ -81,13 +81,7 @@
         <div class="right-jumbo">
             <div class="four-box-layout">
                 <!-- Boxes for insights, detections, growth rate, etc. -->
-                <div class="box" id="detection-insights-box">
-                    <h3>Detection Insights</h3>
-                    <div id="detection-insights">
-                        <p>Loading detection insights...</p>
-                    </div>
-                </div>
-                <div class="box">
+				<div class="box">
                     <h3>Last 5 Detections</h3>
                     <table>
                         <thead>
@@ -103,7 +97,14 @@
                             </tr>
                         </tbody>
                     </table>
+					</div>
+                <div class="box" id="detection-insights-box">
+                    <h3>Detection Insights</h3>
+                    <div id="detection-insights">
+                        <p>Loading detection insights...</p>
+                    </div>
                 </div>
+                
                 <div class="box">
                     <h3>Growth Rate</h3>
                     <table>
@@ -131,9 +132,9 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Plant Name</th>
+                                <th>Plant </th>
                                 <th>Start Date</th>
-                                <th>Current Stage (%)</th>
+                                <th>Current Stage</th>
                             </tr>
                         </thead>
                         <tbody id="seasonal-status-table-body">
@@ -148,7 +149,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Plant Name</th>
+                                <th>Plant </th>
                                 <th>Predicted Harvest Date</th>
                             </tr>
                         </thead>
