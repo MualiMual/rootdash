@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from src.utils.camera import get_camera
 from src.utils.edgedevice import load_models  # Import from edge device
 # Models----------------
-from src.models.time_lapse1 import capture_time_lapse
+from src.models.time_lapse import capture_single_photo
 from src.models.analyze_image import analyze_image
 from src.models.object_detection import generate_frames as generate_frames_with_detection  # Import object detection
 import threading
@@ -30,10 +30,10 @@ app.config['MYSQL_PASSWORD'] = 'your_password'
 app.config['MYSQL_DB'] = 'rootdash'
 
 # Time-lapse configuration
-#app.config['TIME_LAPSE_FOLDER'] = "./media/time_lapse"  # Folder to save time-lapse images
+app.config['TIME_LAPSE_FOLDER'] = os.path.expanduser("~/BASE/dev_tpu/coral/dashboard/media/time_lapse")
 
-# Use an absolute path for TIME_LAPSE_FOLDER
-app.config['TIME_LAPSE_FOLDER'] = os.path.abspath("./media/time_lapse")
+# Ensure the time-lapse folder exists
+os.makedirs(app.config['TIME_LAPSE_FOLDER'], exist_ok=True)
 
 # Connect to MariaDB
 def get_db_connection():
@@ -107,27 +107,75 @@ def sensor_data():
     # Insert sensor data into MariaDB
     conn = get_db_connection()
     if conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO sensor_data (analog_value, color_red, accel_x, pressure, temperature_sht, cpu_usage, ram_usage, storage_usage, ip_address)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            sensor_data["analog_value"],
-            sensor_data["color_red"],
-            sensor_data["accel_x"],
-            sensor_data["pressure"],
-            sensor_data["temperature_sht"],
-            system_stats["cpu_usage"],
-            system_stats["ram_usage"],
-            system_stats["storage_usage"],
-            system_stats["ip_address"]
-        ))
-        conn.commit()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO sensor_data (analog_value, color_red, accel_x, pressure, temperature_sht, cpu_usage, ram_usage, storage_usage, ip_address)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                sensor_data["analog_value"],
+                sensor_data["color_red"],
+                sensor_data["accel_x"],
+                sensor_data["pressure"],
+                sensor_data["temperature_sht"],
+                system_stats["cpu_usage"],
+                system_stats["ram_usage"],
+                system_stats["storage_usage"],
+                system_stats["ip_address"]
+            ))
+            conn.commit()
+        except mariadb.Error as e:
+            logging.error(f"Error inserting sensor data: {e}")
+        finally:
+            conn.close()
 
     return jsonify({**sensor_data, **system_stats})
+def capture_single_photo(output_folder):
+    """
+    Simulate capturing a single photo.
+    Replace this with your actual photo capture logic.
+    """
+    try:
+        # Simulate photo capture
+        time.sleep(1)  # Simulate delay
+        logging.info(f"Photo captured and saved to {output_folder}")
+        return True, "Photo captured successfully"
+    except Exception as e:
+        logging.error(f"Error capturing photo: {e}")
+        return False, str(e)
 
-@app.route("/start_time_lapse", methods=["POST"])
+def capture_time_lapse(output_folder, interval, num_images):
+    """
+    Capture time-lapse images and save them to the specified folder.
+    
+    :param output_folder: Folder to save the images.
+    :param interval: Time interval between captures (in seconds).
+    :param num_images: Number of images to capture.
+    """
+    for i in range(num_images):
+        success, message = capture_single_photo(output_folder=output_folder)
+        if success:
+            logging.info(f"Captured image {i + 1}/{num_images}: {message}")
+        else:
+            logging.error(f"Failed to capture image {i + 1}/{num_images}: {message}")
+        time.sleep(interval)
+
+@app.route("/pause_feed", methods=["POST"])
+def pause_feed():
+    """Pause the live feed to allow the camera to be used by other processes."""
+    global is_feed_paused
+    is_feed_paused = True
+    logging.info("Live feed paused.")
+    return jsonify({"message": "Live feed paused."}), 200
+
+@app.route("/resume_feed", methods=["POST"])
+def resume_feed():
+    """Resume the live feed after the camera is released by other processes."""
+    global is_feed_paused
+    is_feed_paused = False
+    logging.info("Live feed resumed.")
+
+@app.route("/start_time_lapse", methods=["POST"])  # Use the @app.route decorator
 def start_time_lapse():
     """Start capturing time-lapse images in a separate thread."""
     try:
@@ -135,12 +183,13 @@ def start_time_lapse():
         thread = threading.Thread(target=capture_time_lapse, kwargs={
             'output_folder': app.config['TIME_LAPSE_FOLDER'],
             'interval': 3600,  # 1 hour interval
-            'num_images': 10   # Capture 10 images
+            'num_images': 1    # Capture 1 image
         })
         thread.daemon = True  # Daemonize thread to exit when the main program exits
         thread.start()
         return jsonify({"message": "Time-lapse capture started successfully!"}), 200
     except Exception as e:
+        logging.error(f"Failed to start time-lapse capture: {e}")
         return jsonify({"message": f"Failed to start time-lapse capture: {str(e)}"}), 500
 
 @app.route("/analyze_images", methods=["POST"])
@@ -174,21 +223,6 @@ def analyze_images():
     except Exception as e:
         logging.error(f"Error running script: {e}")
         return jsonify({"message": f"Failed to run script: {str(e)}"}), 500
-
-def insert_time_lapse_data(image_name, width, height):
-    """Insert time-lapse data into the database."""
-    timestamp = image_name.split("_")[1].split(".")[0]  # Extract timestamp from filename
-    query = """
-        INSERT INTO time_lapse_data (timestamp, plant_id, width, height, image_path)
-        VALUES (%s, %s, %s, %s, %s)
-    """
-    values = (timestamp, 1, width, height, image_name)  # Replace 1 with actual plant ID
-    conn = get_db_connection()
-    if conn:
-        cursor = conn.cursor()
-        cursor.execute(query, values)
-        conn.commit()
-        conn.close()
 
 @app.route("/inference_data")
 def inference_data():

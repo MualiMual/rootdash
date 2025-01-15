@@ -1,5 +1,0 @@
-Analysis Results for /home/boss/BASE/dev_tpu/coral/dashboard/media/time_lapse/plant4.jpg
-========================================
-Plant Size:
-  Width: 0.28 inches
-  Height: 0.46 inches

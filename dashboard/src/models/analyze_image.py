@@ -12,10 +12,88 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Constants for conversion (example: 100 pixels = 1 inch, adjust based on your reference object)
-PIXELS_PER_INCH = int(os.getenv("PIXELS_PER_INCH", 100))  # Calibrate this based on your image
+# Constants for reference object sizes (in inches)
+REFERENCE_OBJECTS = {
+    "U.S. Quarter": {"diameter": 0.955},  # Diameter in inches
+    "Credit Card": {"width": 3.37, "height": 2.125},  # Width and height in inches
+    "A4 Paper": {"width": 8.27, "height": 11.69},  # Width and height in inches
+    "Baseball": {"diameter": 2.86},  # Diameter in inches
+    "Soccer Ball": {"diameter": 8.6},  # Diameter in inches
+    "Ping Pong Ball": {"diameter": 1.57},  # Diameter in inches
+}
 
-# Function to analyze the plant image
+# Default pixels per inch (PPI) if no reference object is detected
+DEFAULT_PPI = int(os.getenv("PIXELS_PER_INCH", 100))
+
+def detect_reference_object(image):
+    """
+    Detect a reference object in the image and calculate pixels per inch (PPI).
+    :param image: Input image (NumPy array).
+    :return: Pixels per inch (PPI) or None if no reference object is found.
+    """
+    try:
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Apply Gaussian blur to reduce noise
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        # Detect circles (for round objects like quarters, baseballs, etc.)
+        circles = cv2.HoughCircles(
+            blurred,
+            cv2.HOUGH_GRADIENT,
+            dp=1,
+            minDist=50,
+            param1=100,
+            param2=30,
+            minRadius=10,
+            maxRadius=200
+        )
+
+        if circles is not None:
+            circles = np.round(circles[0, :]).astype("int")
+            for (x, y, r) in circles:
+                # Check if the detected circle matches a known reference object
+                diameter_pixels = r * 2
+                for obj_name, obj_data in REFERENCE_OBJECTS.items():
+                    if "diameter" in obj_data:
+                        expected_diameter = obj_data["diameter"]
+                        ppi = diameter_pixels / expected_diameter
+                        logging.info(f"Detected {obj_name}. Pixels per inch (PPI): {ppi}")
+                        return ppi
+
+        # Detect rectangles (for credit cards, A4 paper, etc.)
+        edges = cv2.Canny(blurred, 100, 200)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        for contour in contours:
+            # Approximate the contour to a polygon
+            epsilon = 0.02 * cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, epsilon, True)
+
+            # Check if the contour has 4 vertices (likely a rectangle)
+            if len(approx) == 4:
+                x, y, w, h = cv2.boundingRect(approx)
+                aspect_ratio = float(w) / h
+
+                # Compare aspect ratio to known reference objects
+                for obj_name, obj_data in REFERENCE_OBJECTS.items():
+                    if "width" in obj_data and "height" in obj_data:
+                        expected_aspect_ratio = obj_data["width"] / obj_data["height"]
+                        if abs(aspect_ratio - expected_aspect_ratio) < 0.1:  # Allow some tolerance
+                            # Calculate PPI based on width or height
+                            ppi_width = w / obj_data["width"]
+                            ppi_height = h / obj_data["height"]
+                            ppi = (ppi_width + ppi_height) / 2  # Average PPI
+                            logging.info(f"Detected {obj_name}. Pixels per inch (PPI): {ppi}")
+                            return ppi
+
+        logging.warning("No reference object detected. Using default PPI.")
+        return None
+    except Exception as e:
+        logging.error(f"Error detecting reference object: {e}")
+        return None
+
 def analyze_image(image):
     """
     Analyze an image to detect plants and measure their size.
@@ -23,6 +101,11 @@ def analyze_image(image):
     :return: List of dictionaries with plant width and height in inches.
     """
     try:
+        # Detect reference object and calculate PPI
+        ppi = detect_reference_object(image)
+        if ppi is None:
+            ppi = DEFAULT_PPI  # Fallback to default PPI if no reference object is found
+
         # Convert to grayscale and detect edges
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(gray, 100, 200)
@@ -34,9 +117,9 @@ def analyze_image(image):
         for contour in contours:
             if cv2.contourArea(contour) > 500:  # Filter out small contours
                 x, y, w, h = cv2.boundingRect(contour)
-                # Convert pixel dimensions to inches
-                width_inches = w / PIXELS_PER_INCH
-                height_inches = h / PIXELS_PER_INCH
+                # Convert pixel dimensions to inches using the calculated PPI
+                width_inches = w / ppi
+                height_inches = h / ppi
                 plant_data.append({"width_inches": width_inches, "height_inches": height_inches})
 
         return plant_data
@@ -44,7 +127,6 @@ def analyze_image(image):
         logging.error(f"Error analyzing image: {e}")
         return []
 
-# Function to find the newest image in a directory
 def find_newest_image(directory):
     """
     Find the newest image file in the specified directory.
@@ -67,7 +149,6 @@ def find_newest_image(directory):
         logging.error(f"Error finding newest image: {e}")
         return None
 
-# Function to process the image and save results to CSV
 def process_image(image_path, output_folder, plant_id, experiment_id):
     """
     Process a single image to detect plants and analyze their sizes.
@@ -119,7 +200,6 @@ def process_image(image_path, output_folder, plant_id, experiment_id):
     except Exception as e:
         logging.error(f"Error processing image: {e}")
 
-# Main function (for standalone script usage)
 def main():
     try:
         # Get the absolute path to the script's directory
