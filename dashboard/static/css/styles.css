@@ -189,13 +189,13 @@ body {
 .widget h2,
 .widget h5 {
     margin: 0;
-    font-size: 12px;
+    font-size: 8px;
     font-weight: bold;
 }
 
 .widget p {
     margin: 0;
-    font-size: 12px;
+    font-size: 10px;
 }
 
 /* Right Jumbo Container (40% width) */
@@ -245,7 +245,16 @@ body {
     padding: 3px 5px; /* Increased padding for better spacing */
     text-align: left;
     border-bottom: 1px solid #ddd;
-	font-size: 11px;
+	font-size: 10px;
+}
+
+/* Target the second <th> inside the .box class 
+.box th:nth-child(2) {
+    font-size: 12px; /* Adjust the font size as needed 
+}*/
+
+.label-small-font {
+    font-size: 2px; /* Adjust the size as needed */
 }
 
 .box th {

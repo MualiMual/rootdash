@@ -5,7 +5,7 @@ const endpoints = {
     harvestScheduler: "/harvest_scheduler",
     growthGraph: "/growth_graph",
     sensorData: "/sensor_data",
-    inferenceData: "/inference_data"
+    inferenceData: "/inference_data",
 };
 
 // Function to update the time and date
@@ -28,9 +28,9 @@ async function fetchData(url, tableId, rowTemplate) {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        tableBody.innerHTML = ''; // Clear loading indicator
-        data.forEach(row => {
-            const tr = document.createElement('tr');
+        tableBody.innerHTML = ""; // Clear loading indicator
+        data.forEach((row) => {
+            const tr = document.createElement("tr");
             tr.innerHTML = rowTemplate(row);
             tableBody.appendChild(tr);
         });
@@ -68,7 +68,7 @@ async function fetchSensorData() {
 
 // Fetch and display growth rate data
 function fetchGrowthRateData() {
-    fetchData(endpoints.growthRate, 'growth-rate-table-body', row => `
+    fetchData(endpoints.growthRate, "growth-rate-table-body", (row) => `
         <td>${row.plant_name}</td>
         <td>${row.rate}</td>
         <td>${row.height}</td>
@@ -76,38 +76,29 @@ function fetchGrowthRateData() {
     `);
 }
 
-function fetchGrowthGraph() {
-    fetch('/growth_graph')  // or '/stored_growth_graph'
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Graph Data:", data);  // Debugging: Log the received data
-            const graphImg = document.getElementById('growth-graph');
-            if (data.image) {
-                graphImg.src = `data:image/png;base64,${data.image}`;
-            } else {
-                graphImg.src = "https://via.placeholder.com/400x200?text=Graph+Not+Available";
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching growth graph:', error);
-            const graphImg = document.getElementById('growth-graph');
-            graphImg.src = "https://via.placeholder.com/400x200?text=Error+Loading+Graph";
-        });
+// Fetch and display growth graph
+async function fetchGrowthGraph() {
+    try {
+        const response = await fetch(endpoints.growthGraph);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+
+        const graphImg = document.getElementById("growth-graph");
+        if (data.image) {
+            graphImg.src = `data:image/png;base64,${data.image}`;
+        } else {
+            graphImg.src = "https://via.placeholder.com/400x200?text=Graph+Not+Available";
+        }
+    } catch (error) {
+        console.error("Error fetching growth graph:", error);
+        const graphImg = document.getElementById("growth-graph");
+        graphImg.src = "https://via.placeholder.com/400x200?text=Error+Loading+Graph";
+    }
 }
-
-// Periodically fetch and update the graph
-setInterval(fetchGrowthGraph, 5000);
-fetchGrowthGraph(); // Initial call
-
 
 // Fetch and display seasonal status
 function fetchSeasonalStatus() {
-    fetchData(endpoints.seasonalStatus, 'seasonal-status-table-body', row => `
+    fetchData(endpoints.seasonalStatus, "seasonal-status-table-body", (row) => `
         <td>${row.plant_name}</td>
         <td>${row.start_date}</td>
         <td>${row.current_stage}</td>
@@ -116,7 +107,7 @@ function fetchSeasonalStatus() {
 
 // Fetch and display harvest scheduler
 function fetchHarvestScheduler() {
-    fetchData(endpoints.harvestScheduler, 'harvest-scheduler-table-body', row => `
+    fetchData(endpoints.harvestScheduler, "harvest-scheduler-table-body", (row) => `
         <td>${row.plant_name}</td>
         <td>${row.predicted_harvest_date}</td>
     `);
@@ -125,7 +116,9 @@ function fetchHarvestScheduler() {
 // Function to fetch an image of the detected species
 async function fetchSpeciesImage(speciesName) {
     try {
-        const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(speciesName)}&prop=pageimages&format=json&pithumbsize=100&origin=*`);
+        const response = await fetch(
+            `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(speciesName)}&prop=pageimages&format=json&pithumbsize=100&origin=*`
+        );
         const data = await response.json();
         const pages = data.query.pages;
         const pageId = Object.keys(pages)[0];
@@ -150,7 +143,7 @@ async function updateDetectionData() {
             prev.confidence > current.confidence ? prev : current
         );
 
-        // Highlight the detection insights box if confidence > 230
+        // Highlight the detection insights box if confidence > 30
         const detectionInsightsBox = document.getElementById("detection-insights-box");
         if (highestConfidenceDetection.confidence > 30) {
             detectionInsightsBox.classList.add("highlight");
@@ -184,12 +177,12 @@ async function updateDetectionData() {
                 (detection) => `
                 <tr>
                     <td>${detection.category}</td>
-                    <td>${detection.label}</td>
+                    <td class="label-small-font">${detection.label}</td>
                     <td>${detection.confidence.toFixed(2)}</td>
                 </tr>
             `
             )
-            .join("");
+            .join(""); // Concatenate the array into a single string
     } catch (error) {
         console.error("Error updating detection data:", error);
     }
