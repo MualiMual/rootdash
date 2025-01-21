@@ -152,7 +152,7 @@ async function updateDetectionData() {
 
         // Highlight the detection insights box if confidence > 230
         const detectionInsightsBox = document.getElementById("detection-insights-box");
-        if (highestConfidenceDetection.confidence > 230) {
+        if (highestConfidenceDetection.confidence > 30) {
             detectionInsightsBox.classList.add("highlight");
         } else {
             detectionInsightsBox.classList.remove("highlight");

@@ -208,6 +208,7 @@ body {
     flex-direction: column;
     gap: 10px;
     overflow: hidden;
+	flaot: right;
 }
 
 /* 4-Box Layout */
@@ -271,16 +272,23 @@ body {
     font-weight: bold;
 }
 
+/* Detection Insights Section */
+#detection-insights {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.box.highlight {
+    border: 3px solid #ff0000; /* Bold red border for highlighting */
+}
 
 /* Insight Card Container */
 .insight-card {
-
-    border-radius: 12px;
-
+    border-radius: 5px;
     display: flex;
-   
     max-width: 500px; /* Adjust as needed */
-    margin: 20px auto; /* Center the card */
+    margin: 5px auto; /* Center the card */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -297,21 +305,21 @@ body {
 
 /* Content Section */
 .insight-card .content {
-    padding: 6px;
+    padding: 1px;
     background-color: white;
    
 }
 
 .insight-card h6 {
-    margin: 0 0 12px 0;
-    font-size: 10px;
+    margin: 0 0 2px 0;
+    font-size: 9px;
     font-weight: bold;
     color: #333;
 }
 
 .insight-card p {
-    margin: 0 0 09px 0;
-    font-size: 12px;
+    margin: 0 0 2px 0;
+    font-size: 11px;
     color: #555;
     line-height: 1.5;
 }
@@ -319,6 +327,24 @@ body {
 .insight-card p:last-child {
     margin-bottom: 0; /* Remove margin for the last paragraph */
 }
+
+
+
+/* Insight Card Container */
+#growth-graph{
+    border-radius: 5px;
+    display: flex;
+    max-width: 200px; /* Adjust as needed */
+    margin: 2px auto; /* Center the card */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+#growth-graph:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -332,11 +358,11 @@ body {
     }
 
     .insight-card h6 {
-        font-size: 16px;
+        font-size: 9px;
     }
 
     .insight-card p {
-        font-size: 13px;
+        font-size: 8px;
     }
 }
 
